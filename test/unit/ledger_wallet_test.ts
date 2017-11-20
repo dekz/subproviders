@@ -1,6 +1,4 @@
-import * as proxyquire from 'proxyquire';
 import * as Sinon from 'sinon';
-
 import * as _ from 'lodash';
 import * as mocha from 'mocha';
 import * as chai from 'chai';
