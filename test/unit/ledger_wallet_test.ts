@@ -60,8 +60,7 @@ describe('LedgerWallet', () => {
             commStub.signPersonalMessage_async = Sinon.stub().returns({ v: '1234', r: '123', s: '456' });
             const callback = reportCallbackErrors(done)((err: Error, result: string) =>  {
                 expect(err).to.be.undefined();
-                expect(result).to.be.equal(
-                    '0x071b0cf9a9c0dce10ff33c873fce47b89e9f1661d71420f2ec0d59249ec627395056900bc9032cdcf092cb8034c6047d7390b5384135631ccf001aad91de513700');
+                expect(result).to.be.equal('0x1234564b7');
                 done();
             })
             await wallet.signPersonalMessageAsync(message, callback);
