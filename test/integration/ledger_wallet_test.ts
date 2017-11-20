@@ -57,4 +57,14 @@ describe('LedgerWallet', () => {
             await wallet.signPersonalMessageAsync(message, callback);
         })().catch(done)
     })
+    it.only('signs a transaction', (done: DoneCallback) => {
+        (async () => {
+            const tx = { nonce: '0x00', gasLimit: '0x2710', to: '0x0000000000000000000000000000000000000000', value: '0x00', chainId: 3};
+            const callback = reportCallbackErrors(done)((err: Error, result: string) =>  {
+                expect(err).to.be.undefined();
+                done();
+            })
+            await wallet.signTransactionAsync(tx, callback);
+        })().catch(done)
+    })
 })

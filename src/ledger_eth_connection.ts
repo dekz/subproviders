@@ -35,12 +35,12 @@ export class LedgerEthConnection implements LedgerEthCommunication {
         }
     }
     public async signTransaction_async(derivationPath: string, txHex: string) : Promise<LedgerSignResult> {
-        this._connection = await this.acquireLock();
         try {
+            this._connection = await this.acquireLock();
             const ethConnection = new LedgerEthereumApi(this._connection);
             const result = await ethConnection.signPersonalMessage_async(derivationPath, txHex);
             await this.releaseLock();
-            return result;
+            return { r: result.r, s: result.s, v: result.v.toString() }
         } catch (err) {
             await this.releaseLock();
             throw err;
@@ -61,11 +61,11 @@ export class LedgerEthConnection implements LedgerEthCommunication {
             return;
         }
         try {
-          await this._connection.close_async();
-          this._connection = undefined;
+            await this._connection.close_async();
+            this._connection = undefined;
         } catch (err) {
-          this._connection = undefined;
-          throw err;
+            this._connection = undefined;
+            throw err;
         }
     }
 }

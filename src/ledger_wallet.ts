@@ -7,7 +7,8 @@ import HookedWalletSubprovider = require('web3-provider-engine/subproviders/hook
 import {LedgerCommunicationFactory, SignPersonalMessageParams, TxParams} from './types';
 import {LedgerEthConnection} from './ledger_eth_connection';
 
-const DEFAULT_DERIVATION_PATH = `44'/60'/0'`
+//const DEFAULT_DERIVATION_PATH = `44'/60'/0'`
+const DEFAULT_DERIVATION_PATH = "m/44'/60'/0'"
 const NUM_ADDRESSES_TO_FETCH = 10;
 const ASK_FOR_ON_DEVICE_CONFIRMATION = false;
 const SHOULD_GET_CHAIN_CODE = false;
@@ -63,7 +64,40 @@ export class LedgerWallet {
         }
         callback(undefined, accounts);
     }
-    public async signTransactionAsync(txParams: TxParams, callback: (err: Error, result?: string) => void) {}
+    public async signTransactionAsync(txParams: TxParams, callback: (err?: Error, result?: string) => void) : Promise<void> {
+        const tx = new EthereumTx(txParams);
+        
+        // Set the EIP155 bits
+        tx.raw[6] = Buffer.from([txParams.chainId]);  // v
+        tx.raw[7] = Buffer.from([]);         // r
+        tx.raw[8] = Buffer.from([]);         // s
+        
+        const txHex = tx.serialize().toString('hex');
+        
+        try {
+            const derivationPath = this.getPath();
+            const result = await this._ledgerEthConnection.signTransaction_async(derivationPath, txHex);
+            // Store signature in transaction
+            tx.r = Buffer.from(result.r, 'hex');
+            tx.s = Buffer.from(result.s, 'hex');
+            tx.v = Buffer.from(result.v, 'hex');
+        
+            // EIP155: v should be chain_id * 2 + {35, 36}
+            const signedChainId = Math.floor((tx.v[0] - 35) / 2);
+            if (signedChainId !== tx.chainId) {
+                const err = new Error('TOO_OLD_LEDGER_FIRMWARE');
+                callback(err, undefined);
+                return;
+            }
+        
+            const signedTxHex = `0x${tx.serialize().toString('hex')}`;
+            callback(undefined, signedTxHex);
+        } catch (err) {
+            console.log(err)
+            console.log(err.stack)
+            callback(err, undefined);
+        }
+    }
     public async signPersonalMessageAsync(message: string,
                                           callback: (err?: Error, result?: string) => void): Promise<void> {
         try {
