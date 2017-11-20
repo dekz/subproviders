@@ -84,7 +84,7 @@ export class LedgerWallet {
         
             // EIP155: v should be chain_id * 2 + {35, 36}
             const signedChainId = Math.floor((tx.v[0] - 35) / 2);
-            if (signedChainId !== tx.chainId) {
+            if (signedChainId !== txParams.chainId) {
                 const err = new Error('TOO_OLD_LEDGER_FIRMWARE');
                 callback(err, undefined);
                 return;

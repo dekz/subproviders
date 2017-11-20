@@ -38,9 +38,9 @@ export class LedgerEthConnection implements LedgerEthCommunication {
         try {
             this._connection = await this.acquireLock();
             const ethConnection = new LedgerEthereumApi(this._connection);
-            const result = await ethConnection.signPersonalMessage_async(derivationPath, txHex);
+            const result = await ethConnection.signTransaction_async(derivationPath, txHex);
             await this.releaseLock();
-            return { r: result.r, s: result.s, v: result.v.toString() }
+            return result;
         } catch (err) {
             await this.releaseLock();
             throw err;
