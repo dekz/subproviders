@@ -1,6 +1,12 @@
 import * as _ from 'lodash';
-import { LedgerCommunicationFactory, LedgerEthCommunication, LedgerSignResult, LedgerConnection, LedgerGetAddressResult } from './types'
-import { comm as LedgerCommunication, eth as LedgerEthereumApi } from 'ledgerco';
+import {
+    LedgerCommunicationFactory,
+    LedgerEthCommunication,
+    LedgerSignResult,
+    LedgerConnection,
+    LedgerGetAddressResult
+} from './types'
+import { eth as LedgerEthereumApi } from 'ledgerco';
 import { Lock } from 'semaphore-async-await'
 
 export class LedgerEthConnection implements LedgerEthCommunication {

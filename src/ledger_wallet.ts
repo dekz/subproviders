@@ -4,8 +4,11 @@ import * as EthereumTx from 'ethereumjs-tx';
 import ethUtil = require('ethereumjs-util');
 import * as ledger from 'ledgerco';
 import HookedWalletSubprovider = require('web3-provider-engine/subproviders/hooked-wallet');
-import {LedgerCommunicationFactory, SignPersonalMessageParams, TxParams} from './types';
-import {LedgerEthConnection} from './ledger_eth_connection';
+import {
+    LedgerCommunicationFactory,
+    SignPersonalMessageParams,
+    TxParams} from './types';
+import { LedgerEthConnection } from './ledger_eth_connection';
 
 //const DEFAULT_DERIVATION_PATH = `44'/60'/0'`
 const DEFAULT_DERIVATION_PATH = "m/44'/60'/0'"
