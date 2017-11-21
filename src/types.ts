@@ -1,7 +1,6 @@
 import * as _ from 'lodash';
 import * as Web3 from 'web3';
 import {
-    comm as LedgerCommunication,
     comm_u2f as LedgerBrowserCommunication,
     comm_node as LedgerNodeCommunication
 } from 'ledgerco';

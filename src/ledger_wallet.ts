@@ -51,6 +51,17 @@ export class LedgerWallet {
         this.signMessage = this.signPersonalMessageAsync.bind(this);
         this.signTransaction = this.signTransactionAsync.bind(this);
     }
+    public async testConnection(timeout: number, callback: (error?: Error, connected?: boolean) => void): Promise<void> {
+        const derivationPath = `${this._derivationPath}/0`;
+        const timeoutPromise = new Promise(resolve => setTimeout(resolve, timeout));
+        const connectionPromise = this._ledgerEthConnection.getAddress_async(derivationPath, false, false);
+        let locked = false;
+        connectionPromise.then(() =>     { (locked || callback(undefined, true)); locked = true })
+                         .catch((err) => { (locked || callback(err, false));      locked = true });
+        timeoutPromise.then(() =>     { (locked || callback(undefined, false));  locked = true })
+                      .catch((err) => { (locked || callback(err, false));        locked = true });
+        Promise.race([connectionPromise, timeoutPromise])
+    }
     public async getAccountsAsync(callback: (err?: Error, accounts?: string[]) => void): Promise<void> {
         const accounts = [];
         for (let i = 0; i < NUM_ADDRESSES_TO_FETCH; i++) {
