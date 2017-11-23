@@ -10,8 +10,10 @@ import {
     TxParams,
 } from './types';
 import { LedgerEthConnection } from './ledger_eth_connection';
+import dbg from 'debug';
+const debug = dbg('0x:ledger-wallet');
 
-const DEFAULT_DERIVATION_PATH = "m/44'/60'/0'"
+const DEFAULT_DERIVATION_PATH= `44'/60'/0'`
 const NUM_ADDRESSES_TO_FETCH = 2;
 const ASK_FOR_ON_DEVICE_CONFIRMATION = false;
 const SHOULD_GET_CHAIN_CODE = false;
@@ -37,6 +39,10 @@ export class LedgerWallet {
     }
     public getPath(): string {
         return this._derivationPath;
+    }
+    private getDerivationPath() {
+        const derivationPath = `${this.getPath()}/${this._derivationPathIndex}`;
+        return derivationPath;
     }
     public setPath(derivationPath: string) {
         this._derivationPath = derivationPath;
@@ -91,9 +97,9 @@ export class LedgerWallet {
     // }
     public async getAccountsAsync(callback: (err?: Error, accounts?: string[]) => void): Promise<void> {
         const accounts = [];
-        for (let i = 1; i < NUM_ADDRESSES_TO_FETCH; i++) {
+        for (let i = 0; i < NUM_ADDRESSES_TO_FETCH; i++) {
             try {
-                const derivationPath = `${this._derivationPath}/${i}`;
+                const derivationPath = `${this._derivationPath}/${i + this._derivationPathIndex}`;
                 const result = await this._ledgerEthConnection.getAddress_async(
                     derivationPath, ASK_FOR_ON_DEVICE_CONFIRMATION, SHOULD_GET_CHAIN_CODE,
                 );
@@ -106,20 +112,22 @@ export class LedgerWallet {
         callback(undefined, accounts);
     }
     public async signTransactionAsync(txParams: TxParams, callback: (err?: Error, result?: string) => void) : Promise<void> {
-        console.log(txParams);
         const tx = new EthereumTx(txParams);
-        tx.raw[0] = '0x1';
         
         // Set the EIP155 bits
         tx.raw[6] = Buffer.from([this._network]);  // v
         tx.raw[7] = Buffer.from([]);         // r
         tx.raw[8] = Buffer.from([]);         // s
         
-        console.log(tx.toJSON());
+        debug('tx', tx.toJSON());
         const txHex = tx.serialize().toString('hex');
         
         try {
-            const derivationPath = this.getPath();
+            const derivationPath = this.getDerivationPath();
+            const r1 = await this._ledgerEthConnection.getAddress_async(
+                derivationPath, ASK_FOR_ON_DEVICE_CONFIRMATION, SHOULD_GET_CHAIN_CODE,
+            );
+            debug('signing account', r1);
             const result = await this._ledgerEthConnection.signTransaction_async(derivationPath, txHex);
             // Store signature in transaction
             tx.r = Buffer.from(result.r, 'hex');
@@ -128,11 +136,12 @@ export class LedgerWallet {
         
             // EIP155: v should be chain_id * 2 + {35, 36}
             const signedChainId = Math.floor((tx.v[0] - 35) / 2);
-            // if (signedChainId !== txParams.chainId) {
-            //     const err = new Error('TOO_OLD_LEDGER_FIRMWARE');
-            //     callback(err, undefined);
-            //     return;
-            // }
+            if (signedChainId !== this._network) {
+                debug('error: "TOO_OLD_LEDGER_FIRMWARE" ', signedChainId);
+                const err = new Error('TOO_OLD_LEDGER_FIRMWARE');
+                callback(err, undefined);
+                return;
+            }
         
             const signedTxHex = `0x${tx.serialize().toString('hex')}`;
             callback(undefined, signedTxHex);
@@ -143,7 +152,7 @@ export class LedgerWallet {
     public async signPersonalMessageAsync(message: string,
                                           callback: (err?: Error, result?: string) => void): Promise<void> {
         try {
-            const derivationPath = `${this._derivationPath}/${0}`;
+            const derivationPath = this.getDerivationPath();
             const result = await this._ledgerEthConnection.signPersonalMessage_async(
                 derivationPath, ethUtil.stripHexPrefix(Buffer.from(message).toString('hex')),
             );
