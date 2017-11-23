@@ -31,9 +31,10 @@ describe('LedgerWallet', () => {
     let wallet: LedgerWallet;
     let stubs: Sinon.SinonStub[] = [];
     let commStub: LedgerEthConnection;
+    const networkId: number = 42;
     before(async () => {
         commStub = <LedgerEthConnection>{};
-        wallet = new LedgerWallet((commStub as LedgerEthConnection));
+        wallet = new LedgerWallet((commStub as LedgerEthConnection), networkId);
     });
     afterEach(() => {
         // clean up any stubs after the test has completed
@@ -61,7 +62,8 @@ describe('LedgerWallet', () => {
                 expect(result).to.be.equal('0x1234564b7');
                 done();
             })
-            await wallet.signPersonalMessageAsync(message, callback);
+            const msgParams = { data: message };
+            await wallet.signPersonalMessageAsync(msgParams, callback);
         })().catch(done)
     })
 })

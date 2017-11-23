@@ -32,10 +32,11 @@ const reportCallbackErrors = (done: DoneCallback) => {
 describe('LedgerWallet', () => {
     let wallet: LedgerWallet;
     let connection: LedgerEthConnection;
+    let network: number = 42;
     before(async () => {
         const communicationFactory = LedgerNodeCommunicationFactory;
         connection = new LedgerEthConnection(communicationFactory);
-        wallet = new LedgerWallet(connection);
+        wallet = new LedgerWallet(connection, network);
     });
     it('returns a list of accounts', (done: DoneCallback) => {
         (async () => {
@@ -57,7 +58,7 @@ describe('LedgerWallet', () => {
                     '0x071b0cf9a9c0dce10ff33c873fce47b89e9f1661d71420f2ec0d59249ec627395056900bc9032cdcf092cb8034c6047d7390b5384135631ccf001aad91de513700');
                 done();
             })
-            await wallet.signPersonalMessageAsync(message, callback);
+            await wallet.signPersonalMessageAsync({ data: message }, callback);
         })().catch(done)
     })
     it('signs a transaction', (done: DoneCallback) => {
@@ -73,7 +74,7 @@ describe('LedgerWallet', () => {
     it.only('connects as as web3 provider', (done: DoneCallback) => {
         (async () => {
             const provider = new ProviderEngine();
-            const subprovider = ledgerWalletSubproviderFactory(connection);
+            const subprovider = ledgerWalletSubproviderFactory(connection, network);
             provider.addProvider(subprovider);
             done();
         })().catch(done)

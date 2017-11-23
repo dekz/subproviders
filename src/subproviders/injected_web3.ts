@@ -7,7 +7,7 @@ import Web3 = require('web3');
  * web3 instance in their browser.
  * Source: https://github.com/MetaMask/provider-engine/blob/master/subproviders/subprovider.js
  */
-export class InjectedWeb3SubProvider {
+export class InjectedWeb3Subprovider {
     private injectedWeb3: Web3;
     constructor(injectedWeb3: Web3) {
         this.injectedWeb3 = injectedWeb3;
