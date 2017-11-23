@@ -28,11 +28,16 @@ export class LedgerWallet {
     private _derivationPath: string;
     private _derivationPathIndex: number;
     private _ledgerEthConnection: LedgerEthConnection;
-    constructor(connection: LedgerEthConnection, network: number) {
+    private _alwaysAskForConfirmation: boolean;
+    private _shouldGetChainCode: boolean;
+    constructor(connection: LedgerEthConnection, network: number, derivationPath?: string, derivationPathIndex?: number,
+         alwaysAskForConfirmation?: boolean, shouldGetChainCode?: boolean) {
         this._network = network;
         this._ledgerEthConnection = connection;
-        this._derivationPath = DEFAULT_DERIVATION_PATH;
-        this._derivationPathIndex = 0;
+        this._derivationPath = derivationPath || DEFAULT_DERIVATION_PATH;
+        this._alwaysAskForConfirmation = alwaysAskForConfirmation || ASK_FOR_ON_DEVICE_CONFIRMATION;
+        this._derivationPathIndex = derivationPathIndex || 0;
+        this._shouldGetChainCode = shouldGetChainCode || SHOULD_GET_CHAIN_CODE;
         this.getAccounts = this.getAccountsAsync.bind(this);
         this.signMessage = this.signPersonalMessageAsync.bind(this);
         this.signTransaction = this.signTransactionAsync.bind(this);
@@ -101,7 +106,7 @@ export class LedgerWallet {
             try {
                 const derivationPath = `${this._derivationPath}/${i + this._derivationPathIndex}`;
                 const result = await this._ledgerEthConnection.getAddress_async(
-                    derivationPath, ASK_FOR_ON_DEVICE_CONFIRMATION, SHOULD_GET_CHAIN_CODE,
+                    derivationPath, this._alwaysAskForConfirmation, this._shouldGetChainCode,
                 );
                 accounts.push(result.address.toLowerCase());
             } catch (err) {
@@ -125,7 +130,7 @@ export class LedgerWallet {
         try {
             const derivationPath = this.getDerivationPath();
             const r1 = await this._ledgerEthConnection.getAddress_async(
-                derivationPath, ASK_FOR_ON_DEVICE_CONFIRMATION, SHOULD_GET_CHAIN_CODE,
+                derivationPath, this._alwaysAskForConfirmation, this._shouldGetChainCode,
             );
             debug('signing account', r1);
             const result = await this._ledgerEthConnection.signTransaction_async(derivationPath, txHex);
