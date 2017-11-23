@@ -1,3 +1,6 @@
+## 0x subproviders
+A bunch of useful subproviders, including a Ledger Nano subprovider.
+
 ## Ledger Subprovider for Web3
 
 Usage example as a [Web3 Provider Engine](https://github.com/MetaMask/provider-engine).
@@ -10,7 +13,7 @@ import {
     LedgerWalletSubprovider,
     LedgerBrowserCommunicationFactory,
     wrapWalletSubproviderFactory
-} from 'ledger';
+} from '0x-subproviders';
 
 const networkId = 42;
 const provider = new ProviderEngine();
