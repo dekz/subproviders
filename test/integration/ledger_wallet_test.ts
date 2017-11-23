@@ -6,8 +6,10 @@ import { chaiSetup } from '../chai_setup';
 chaiSetup.configure();
 const expect = chai.expect;
 
+import ProviderEngine = require('web3-provider-engine');
 import {
     LedgerWallet,
+    ledgerWalletSubproviderFactory,
     LedgerEthConnection
 } from '../../src';
 
@@ -29,9 +31,10 @@ const reportCallbackErrors = (done: DoneCallback) => {
 };
 describe('LedgerWallet', () => {
     let wallet: LedgerWallet;
+    let connection: LedgerEthConnection;
     before(async () => {
         const communicationFactory = LedgerNodeCommunicationFactory;
-        const connection = new LedgerEthConnection(communicationFactory);
+        connection = new LedgerEthConnection(communicationFactory);
         wallet = new LedgerWallet(connection);
     });
     it('returns a list of accounts', (done: DoneCallback) => {
@@ -57,7 +60,7 @@ describe('LedgerWallet', () => {
             await wallet.signPersonalMessageAsync(message, callback);
         })().catch(done)
     })
-    it.only('signs a transaction', (done: DoneCallback) => {
+    it('signs a transaction', (done: DoneCallback) => {
         (async () => {
             const tx = { nonce: '0x00', gasLimit: '0x2710', to: '0x0000000000000000000000000000000000000000', value: '0x00', chainId: 3};
             const callback = reportCallbackErrors(done)((err: Error, result: string) =>  {
@@ -65,6 +68,14 @@ describe('LedgerWallet', () => {
                 done();
             })
             await wallet.signTransactionAsync(tx, callback);
+        })().catch(done)
+    })
+    it.only('connects as as web3 provider', (done: DoneCallback) => {
+        (async () => {
+            const provider = new ProviderEngine();
+            const subprovider = ledgerWalletSubproviderFactory(connection);
+            provider.addProvider(subprovider);
+            done();
         })().catch(done)
     })
 })

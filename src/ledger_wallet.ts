@@ -7,12 +7,12 @@ import HookedWalletSubprovider = require('web3-provider-engine/subproviders/hook
 import {
     LedgerCommunicationFactory,
     SignPersonalMessageParams,
-    TxParams} from './types';
+    TxParams,
+} from './types';
 import { LedgerEthConnection } from './ledger_eth_connection';
 
-//const DEFAULT_DERIVATION_PATH = `44'/60'/0'`
 const DEFAULT_DERIVATION_PATH = "m/44'/60'/0'"
-const NUM_ADDRESSES_TO_FETCH = 10;
+const NUM_ADDRESSES_TO_FETCH = 2;
 const ASK_FOR_ON_DEVICE_CONFIRMATION = false;
 const SHOULD_GET_CHAIN_CODE = false;
 
@@ -22,10 +22,12 @@ export class LedgerWallet {
         callback: (err: Error, result?: string) => void) => void;
     public signTransaction: (txParams: TxParams,
             callback: (err: Error, result?: string) => void) => void;
+    private _network: number;
     private _derivationPath: string;
     private _derivationPathIndex: number;
     private _ledgerEthConnection: LedgerEthConnection;
-    constructor(connection: LedgerEthConnection) {
+    constructor(connection: LedgerEthConnection, network: number) {
+        this._network = network;
         this._ledgerEthConnection = connection;
         this._derivationPath = DEFAULT_DERIVATION_PATH;
         this._derivationPathIndex = 0;
@@ -52,19 +54,44 @@ export class LedgerWallet {
         this.signTransaction = this.signTransactionAsync.bind(this);
     }
     public async testConnection(timeout: number, callback: (error?: Error, connected?: boolean) => void): Promise<void> {
-        const derivationPath = `${this._derivationPath}/0`;
-        const timeoutPromise = new Promise(resolve => setTimeout(resolve, timeout));
-        const connectionPromise = this._ledgerEthConnection.getAddress_async(derivationPath, false, false);
         let locked = false;
+        const timeoutPromise = new Promise(resolve => setTimeout(resolve, timeout));
+        const derivationPath = `${this._derivationPath}/0`;
+        const connectionPromise = this._ledgerEthConnection.getAddress_async(derivationPath, false, false);
         connectionPromise.then(() =>     { (locked || callback(undefined, true)); locked = true })
                          .catch((err) => { (locked || callback(err, false));      locked = true });
         timeoutPromise.then(() =>     { (locked || callback(undefined, false));  locked = true })
                       .catch((err) => { (locked || callback(err, false));        locked = true });
         Promise.race([connectionPromise, timeoutPromise])
     }
+    public async isSupported(callback: (error?: Error, supported?: boolean) => void): Promise<void> {
+        callback(undefined, true);
+    }
+    // async isU2FSupportedAsync(): Promise<boolean> {
+    //     const w = (window as any);
+    //     return new Promise((resolve: (isSupported: boolean) => void) => {
+    //         if (w.u2f && !w.u2f.getApiVersion) {
+    //             // u2f object was found (Firefox with extension)
+    //             resolve(true);
+    //         } else {
+    //             // u2f object was not found. Using Google polyfill
+    //             // HACK: u2f.getApiVersion will simply not return a version if the
+    //             // U2F call fails for any reason. Because of this, we set a hard 3sec
+    //             // timeout to the request on our end.
+    //             const getApiVersionTimeoutMs = 3000;
+    //             const intervalId = setTimeout(() => {
+    //                 resolve(false);
+    //             }, getApiVersionTimeoutMs);
+    //             u2f.getApiVersion((version: number) => {
+    //                 clearTimeout(intervalId);
+    //                 resolve(true);
+    //             });
+    //         }
+    //     });
+    // }
     public async getAccountsAsync(callback: (err?: Error, accounts?: string[]) => void): Promise<void> {
         const accounts = [];
-        for (let i = 0; i < NUM_ADDRESSES_TO_FETCH; i++) {
+        for (let i = 1; i < NUM_ADDRESSES_TO_FETCH; i++) {
             try {
                 const derivationPath = `${this._derivationPath}/${i}`;
                 const result = await this._ledgerEthConnection.getAddress_async(
@@ -79,13 +106,16 @@ export class LedgerWallet {
         callback(undefined, accounts);
     }
     public async signTransactionAsync(txParams: TxParams, callback: (err?: Error, result?: string) => void) : Promise<void> {
+        console.log(txParams);
         const tx = new EthereumTx(txParams);
+        tx.raw[0] = '0x1';
         
         // Set the EIP155 bits
-        tx.raw[6] = Buffer.from([txParams.chainId]);  // v
+        tx.raw[6] = Buffer.from([this._network]);  // v
         tx.raw[7] = Buffer.from([]);         // r
         tx.raw[8] = Buffer.from([]);         // s
         
+        console.log(tx.toJSON());
         const txHex = tx.serialize().toString('hex');
         
         try {
@@ -98,17 +128,15 @@ export class LedgerWallet {
         
             // EIP155: v should be chain_id * 2 + {35, 36}
             const signedChainId = Math.floor((tx.v[0] - 35) / 2);
-            if (signedChainId !== txParams.chainId) {
-                const err = new Error('TOO_OLD_LEDGER_FIRMWARE');
-                callback(err, undefined);
-                return;
-            }
+            // if (signedChainId !== txParams.chainId) {
+            //     const err = new Error('TOO_OLD_LEDGER_FIRMWARE');
+            //     callback(err, undefined);
+            //     return;
+            // }
         
             const signedTxHex = `0x${tx.serialize().toString('hex')}`;
             callback(undefined, signedTxHex);
         } catch (err) {
-            console.log(err)
-            console.log(err.stack)
             callback(err, undefined);
         }
     }
@@ -132,11 +160,14 @@ export class LedgerWallet {
     }
 }
 
-export const ledgerWalletSubproviderFactory = (ledgerEthConnection: LedgerEthConnection): LedgerWallet => {
-    const wallet = new LedgerWallet(ledgerEthConnection);
+export const wrapWalletSubproviderFactory = (wallet: LedgerWallet): LedgerWallet => {
     const subProvider = new HookedWalletSubprovider(wallet) as LedgerWallet;
     subProvider.getPath = wallet.getPath.bind(wallet);
     subProvider.setPath = wallet.setPath.bind(wallet);
     subProvider.setPathIndex = wallet.setPathIndex.bind(wallet);
-    return wallet;
+    return subProvider;
+}
+export const ledgerWalletSubproviderFactory = (ledgerEthConnection: LedgerEthConnection, network: number): LedgerWallet => {
+    const wallet = new LedgerWallet(ledgerEthConnection, network);
+    return wrapWalletSubproviderFactory(wallet);
 }

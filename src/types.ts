@@ -33,6 +33,11 @@ export interface LedgerConnection {
     create_async: () => void;
 }
 
+export interface LedgerWalletSubprovider {
+    getPath: () => string;
+    setPath: (path: string) => void;
+    setPathIndex: (pathIndex: number) => void;
+}
 export interface LedgerEthCommunication {
     getAddress_async: (derivationPath: string, askForDeviceConfirmation: boolean,
                        shouldGetChainCode: boolean) => Promise<LedgerGetAddressResult>;
@@ -41,12 +46,6 @@ export interface LedgerEthCommunication {
 }
 export interface SignPersonalMessageParams {
     data: string;
-}
-
-export interface LedgerWalletSubprovider {
-    getPath: () => string;
-    setPath: (path: string) => void;
-    setPathIndex: (pathIndex: number) => void;
 }
 
 export interface TxParams {

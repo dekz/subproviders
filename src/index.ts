@@ -1,7 +1,8 @@
-export { LedgerWallet } from './ledger_wallet'
+export { LedgerWallet, wrapWalletSubproviderFactory, ledgerWalletSubproviderFactory } from './ledger_wallet'
 export { LedgerEthConnection } from './ledger_eth_connection'
 
 export {
    LedgerBrowserCommunicationFactory,
-   LedgerNodeCommunicationFactory
+   LedgerNodeCommunicationFactory,
+   LedgerWalletSubprovider
 } from './types'

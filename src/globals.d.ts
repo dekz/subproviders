@@ -3,6 +3,7 @@
 declare module 'dirty-chai';
 declare module 'ledgerco';
 declare module 'ethereumjs-tx';
+declare module 'web3-provider-engine';
 
 declare module 'ledgerco' {
     interface comm {

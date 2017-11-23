@@ -62,15 +62,16 @@ export class LedgerEthConnection implements LedgerEthCommunication {
     }
 
     private async releaseLock(): Promise<void> {
-        await this.lock.release();
         if (_.isUndefined(this._connection)) {
             return;
         }
         try {
             await this._connection.close_async();
             this._connection = undefined;
+            await this.lock.release();
         } catch (err) {
             this._connection = undefined;
+            await this.lock.release();
             throw err;
         }
     }
