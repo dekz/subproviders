@@ -1,9 +1,9 @@
 {
   "name": "0x-subproviders",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "main": "lib/src/index.js",
   "types": "lib/src/index.d.ts",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "scripts": {
     "prebuild": "npm run clean",
     "build": "run-p build:umd:dev build:commonjs; exit 0;",
