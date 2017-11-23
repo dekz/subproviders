@@ -52,3 +52,28 @@ Set the modified provider in 0x.js
 ```
 this.zeroEx = new ZeroEx(provider);
 ```
+
+Test the connection before assuming the ledger is present.
+```js
+provider = new ProviderEngine();
+const conn = new LedgerEthConnection(LedgerBrowserCommunicationFactory);
+const wallet = new LedgerWallet(conn, networkId);
+const timeout = 500;
+wallet.testConnection(timeout, (err, connected) => {
+    if (_.isUndefined(err) && connected) {
+        utils.debug('provider')('ledger');
+        this.ledgerSubProvider = wrapWalletSubproviderFactory(wallet);
+        provider.addProvider(this.ledgerSubProvider);
+    } else {
+        utils.debug('provider')('injected');
+        provider.addProvider(new InjectedWeb3SubProvider(injectedWeb3));
+    }
+    utils.debug('provider')('filter');
+    provider.addProvider(new FilterSubprovider());
+    utils.debug('provider')(publicNodeUrlsIfExistsForNetworkId);
+    provider.addProvider(new RpcSubprovider(
+        rpcUrl: publicRpcNode,
+    ));
+    provider.start();
+});
+```

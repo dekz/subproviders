@@ -8,8 +8,8 @@ import {
     LedgerCommunicationFactory,
     SignPersonalMessageParams,
     TxParams,
-} from './types';
-import { LedgerEthConnection } from './ledger_eth_connection';
+} from '../types';
+import { LedgerEthConnection } from '../ledger_eth_connection';
 import dbg from 'debug';
 const debug = dbg('0x:ledger-wallet');
 
@@ -78,28 +78,6 @@ export class LedgerWallet {
     public async isSupported(callback: (error?: Error, supported?: boolean) => void): Promise<void> {
         callback(undefined, true);
     }
-    // async isU2FSupportedAsync(): Promise<boolean> {
-    //     const w = (window as any);
-    //     return new Promise((resolve: (isSupported: boolean) => void) => {
-    //         if (w.u2f && !w.u2f.getApiVersion) {
-    //             // u2f object was found (Firefox with extension)
-    //             resolve(true);
-    //         } else {
-    //             // u2f object was not found. Using Google polyfill
-    //             // HACK: u2f.getApiVersion will simply not return a version if the
-    //             // U2F call fails for any reason. Because of this, we set a hard 3sec
-    //             // timeout to the request on our end.
-    //             const getApiVersionTimeoutMs = 3000;
-    //             const intervalId = setTimeout(() => {
-    //                 resolve(false);
-    //             }, getApiVersionTimeoutMs);
-    //             u2f.getApiVersion((version: number) => {
-    //                 clearTimeout(intervalId);
-    //                 resolve(true);
-    //             });
-    //         }
-    //     });
-    // }
     public async getAccountsAsync(callback: (err?: Error, accounts?: string[]) => void): Promise<void> {
         const accounts = [];
         for (let i = 0; i < NUM_ADDRESSES_TO_FETCH; i++) {
@@ -110,6 +88,7 @@ export class LedgerWallet {
                 );
                 accounts.push(result.address.toLowerCase());
             } catch (err) {
+                debug('get-accounts:error', err);
                 callback(err, undefined);
                 return;
             }
@@ -117,6 +96,7 @@ export class LedgerWallet {
         callback(undefined, accounts);
     }
     public async signTransactionAsync(txParams: TxParams, callback: (err?: Error, result?: string) => void) : Promise<void> {
+        debug('sign-transaction', txParams);
         const tx = new EthereumTx(txParams);
         
         // Set the EIP155 bits
@@ -124,15 +104,9 @@ export class LedgerWallet {
         tx.raw[7] = Buffer.from([]);         // r
         tx.raw[8] = Buffer.from([]);         // s
         
-        debug('tx', tx.toJSON());
         const txHex = tx.serialize().toString('hex');
-        
         try {
             const derivationPath = this.getDerivationPath();
-            const r1 = await this._ledgerEthConnection.getAddress_async(
-                derivationPath, this._alwaysAskForConfirmation, this._shouldGetChainCode,
-            );
-            debug('signing account', r1);
             const result = await this._ledgerEthConnection.signTransaction_async(derivationPath, txHex);
             // Store signature in transaction
             tx.r = Buffer.from(result.r, 'hex');
@@ -151,6 +125,7 @@ export class LedgerWallet {
             const signedTxHex = `0x${tx.serialize().toString('hex')}`;
             callback(undefined, signedTxHex);
         } catch (err) {
+            debug('sign-transaction:error', err);
             callback(err, undefined);
         }
     }
@@ -163,9 +138,6 @@ export class LedgerWallet {
                 addressIndex = await this.findAddressIndex(msgParams.from, 10);
             }
             const derivationPath = `${this._derivationPath}/${addressIndex}`;
-            const signingAccount = await this._ledgerEthConnection.getAddress_async(
-                derivationPath, this._alwaysAskForConfirmation, this._shouldGetChainCode,
-            );
             const result = await this._ledgerEthConnection.signPersonalMessage_async(
                 derivationPath, ethUtil.stripHexPrefix(msgParams.data));
             const v = _.parseInt(result.v) - 27;
@@ -176,6 +148,7 @@ export class LedgerWallet {
             const signature = `0x${result.r}${result.s}${vHex}`;
             callback(undefined, signature);
         } catch (err) {
+            debug('sign-personal-message:error', err);
             callback(err, undefined);
         }
     }

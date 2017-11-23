@@ -60,3 +60,8 @@ export interface TxParams {
 }
 
 export type DoneCallback = (err?: Error) => void;
+
+export interface JSONRPCPayload {
+    params: any[];
+    method: string;
+}
