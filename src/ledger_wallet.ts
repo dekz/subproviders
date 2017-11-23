@@ -176,7 +176,6 @@ export class LedgerWallet {
             const signature = `0x${result.r}${result.s}${vHex}`;
             callback(undefined, signature);
         } catch (err) {
-            debug('sign-personal-message:error', err);
             callback(err, undefined);
         }
     }
