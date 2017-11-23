@@ -45,6 +45,7 @@ export interface LedgerEthCommunication {
     signTransaction_async: (derivationPath: string, txHex: string) => Promise<LedgerSignResult>;
 }
 export interface SignPersonalMessageParams {
+    from?: string;
     data: string;
 }
 

@@ -154,19 +154,26 @@ export class LedgerWallet {
             callback(err, undefined);
         }
     }
-    public async signPersonalMessageAsync(message: string,
+    public async signPersonalMessageAsync(msgParams: SignPersonalMessageParams,
                                           callback: (err?: Error, result?: string) => void): Promise<void> {
+        debug('signing message', msgParams);
         try {
+            // TODO we are just taking the first account, we should try and match the from field
             const derivationPath = this.getDerivationPath();
-            const result = await this._ledgerEthConnection.signPersonalMessage_async(
-                derivationPath, ethUtil.stripHexPrefix(Buffer.from(message).toString('hex')),
+            const r1 = await this._ledgerEthConnection.getAddress_async(
+                derivationPath, this._alwaysAskForConfirmation, this._shouldGetChainCode,
             );
+            debug('signing account', r1);
+            debug('data: ', ethUtil.stripHexPrefix(msgParams.data));
+            const result = await this._ledgerEthConnection.signPersonalMessage_async(
+                derivationPath, ethUtil.stripHexPrefix(msgParams.data));
             const v = _.parseInt(result.v) - 27;
             let vHex = v.toString(16);
             if (vHex.length < 2) {
                 vHex = `0${v}`;
             }
             const signature = `0x${result.r}${result.s}${vHex}`;
+            debug('signature', signature);
             callback(undefined, signature);
         } catch (err) {
             callback(err, undefined);
