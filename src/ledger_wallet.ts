@@ -156,15 +156,16 @@ export class LedgerWallet {
     }
     public async signPersonalMessageAsync(msgParams: SignPersonalMessageParams,
                                           callback: (err?: Error, result?: string) => void): Promise<void> {
-        debug('signing message', msgParams);
+        debug('sign-personal-message', msgParams);
+        let addressIndex = 0;
         try {
-            // TODO we are just taking the first account, we should try and match the from field
-            const derivationPath = this.getDerivationPath();
-            const r1 = await this._ledgerEthConnection.getAddress_async(
+            if (!_.isUndefined(msgParams.from)) {
+                addressIndex = await this.findAddressIndex(msgParams.from, 10);
+            }
+            const derivationPath = `${this._derivationPath}/${addressIndex}`;
+            const signingAccount = await this._ledgerEthConnection.getAddress_async(
                 derivationPath, this._alwaysAskForConfirmation, this._shouldGetChainCode,
             );
-            debug('signing account', r1);
-            debug('data: ', ethUtil.stripHexPrefix(msgParams.data));
             const result = await this._ledgerEthConnection.signPersonalMessage_async(
                 derivationPath, ethUtil.stripHexPrefix(msgParams.data));
             const v = _.parseInt(result.v) - 27;
@@ -173,11 +174,29 @@ export class LedgerWallet {
                 vHex = `0${v}`;
             }
             const signature = `0x${result.r}${result.s}${vHex}`;
-            debug('signature', signature);
             callback(undefined, signature);
         } catch (err) {
+            debug('sign-personal-message:error', err);
             callback(err, undefined);
         }
+    }
+    private async findAddressIndex(address: string, maxTries: number): Promise<number> {
+        for (let i = 0; i < maxTries; i++) {
+            try {
+                const derivationPath = `${this._derivationPath}/${i + this._derivationPathIndex}`;
+                const result = await this._ledgerEthConnection.getAddress_async(
+                    derivationPath, this._alwaysAskForConfirmation, this._shouldGetChainCode,
+                );
+                const matched = address.toLowerCase() === result.address.toLowerCase();
+                if (matched) {
+                    return i;
+                }
+            } catch (err) {
+                debug('find-address', err);
+                throw err;
+            }
+        }
+        throw Error('Exhasuted max tries searching for address');
     }
 }
 
