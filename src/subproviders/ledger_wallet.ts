@@ -8,6 +8,7 @@ import {
     LedgerCommunicationFactory,
     SignPersonalMessageParams,
     TxParams,
+    LedgerSubproviderConfigs,
 } from '../types';
 import { LedgerEthConnection } from '../ledger_eth_connection';
 import dbg from 'debug';
@@ -28,16 +29,15 @@ export class LedgerWallet {
     private _derivationPath: string;
     private _derivationPathIndex: number;
     private _ledgerEthConnection: LedgerEthConnection;
-    private _alwaysAskForConfirmation: boolean;
+    private _shouldAlwaysAskForConfirmation: boolean;
     private _shouldGetChainCode: boolean;
-    constructor(connection: LedgerEthConnection, network: number, derivationPath?: string, derivationPathIndex?: number,
-         alwaysAskForConfirmation?: boolean, shouldGetChainCode?: boolean) {
-        this._network = network;
-        this._ledgerEthConnection = connection;
-        this._derivationPath = derivationPath || DEFAULT_DERIVATION_PATH;
-        this._alwaysAskForConfirmation = alwaysAskForConfirmation || ASK_FOR_ON_DEVICE_CONFIRMATION;
-        this._derivationPathIndex = derivationPathIndex || 0;
-        this._shouldGetChainCode = shouldGetChainCode || SHOULD_GET_CHAIN_CODE;
+    constructor(config: LedgerSubproviderConfigs) {
+        this._network = config.networkId;
+        this._ledgerEthConnection = config.ledgerConnection;
+        this._derivationPath = config.derivationPath || DEFAULT_DERIVATION_PATH;
+        this._shouldAlwaysAskForConfirmation = config.shouldAskForOnDeviceConfirmation || ASK_FOR_ON_DEVICE_CONFIRMATION;
+        this._derivationPathIndex = config.derivationPathIndex || 0;
+        this._shouldGetChainCode = SHOULD_GET_CHAIN_CODE;
         this.getAccounts = this.getAccountsAsync.bind(this);
         this.signMessage = this.signPersonalMessageAsync.bind(this);
         this.signTransaction = this.signTransactionAsync.bind(this);
@@ -84,7 +84,7 @@ export class LedgerWallet {
             try {
                 const derivationPath = `${this._derivationPath}/${i + this._derivationPathIndex}`;
                 const result = await this._ledgerEthConnection.getAddress_async(
-                    derivationPath, this._alwaysAskForConfirmation, this._shouldGetChainCode,
+                    derivationPath, this._shouldAlwaysAskForConfirmation, this._shouldGetChainCode,
                 );
                 accounts.push(result.address.toLowerCase());
             } catch (err) {
@@ -138,6 +138,10 @@ export class LedgerWallet {
                 addressIndex = await this.findAddressIndex(msgParams.from, 10);
             }
             const derivationPath = `${this._derivationPath}/${addressIndex}`;
+            const address = await this._ledgerEthConnection.getAddress_async(
+                derivationPath, this._shouldAlwaysAskForConfirmation, this._shouldGetChainCode,
+            );
+            debug('sign-address', address);
             const result = await this._ledgerEthConnection.signPersonalMessage_async(
                 derivationPath, ethUtil.stripHexPrefix(msgParams.data));
             const v = _.parseInt(result.v) - 27;
@@ -146,6 +150,7 @@ export class LedgerWallet {
                 vHex = `0${v}`;
             }
             const signature = `0x${result.r}${result.s}${vHex}`;
+            debug('signature', signature);
             callback(undefined, signature);
         } catch (err) {
             debug('sign-personal-message:error', err);
@@ -157,7 +162,7 @@ export class LedgerWallet {
             try {
                 const derivationPath = `${this._derivationPath}/${i + this._derivationPathIndex}`;
                 const result = await this._ledgerEthConnection.getAddress_async(
-                    derivationPath, this._alwaysAskForConfirmation, this._shouldGetChainCode,
+                    derivationPath, this._shouldAlwaysAskForConfirmation, this._shouldGetChainCode,
                 );
                 const matched = address.toLowerCase() === result.address.toLowerCase();
                 if (matched) {
@@ -180,6 +185,7 @@ export const wrapWalletSubproviderFactory = (wallet: LedgerWallet): LedgerWallet
     return subProvider;
 }
 export const ledgerWalletSubproviderFactory = (ledgerEthConnection: LedgerEthConnection, network: number): LedgerWallet => {
-    const wallet = new LedgerWallet(ledgerEthConnection, network);
+    const ledgerConnectionParams = { ledgerConnection: ledgerEthConnection, networkId: network }
+    const wallet = new LedgerWallet(ledgerConnectionParams);
     return wrapWalletSubproviderFactory(wallet);
 }

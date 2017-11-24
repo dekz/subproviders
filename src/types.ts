@@ -4,6 +4,7 @@ import {
     comm_u2f as LedgerBrowserCommunication,
     comm_node as LedgerNodeCommunication
 } from 'ledgerco';
+import { LedgerEthConnection } from './ledger_eth_connection';
 
 export {
     comm as LedgerCommunication
@@ -64,4 +65,13 @@ export type DoneCallback = (err?: Error) => void;
 export interface JSONRPCPayload {
     params: any[];
     method: string;
+}
+
+export interface LedgerSubproviderConfigs {
+    networkId: number;
+    ledgerConnection: LedgerEthConnection;
+    derivationPath?: string;
+    derivationPathIndex?: number;
+    numAddressedToFetch?: number;
+    shouldAskForOnDeviceConfirmation?: boolean;
 }
