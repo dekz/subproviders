@@ -60,6 +60,18 @@ export interface TxParams {
     chainId: number; // EIP 155 chainId - mainnet: 1, ropsten: 3
 }
 
+// TODO confirm final structure
+export interface PartialTxParams {
+    nonce: string;
+    gasPrice?: number;
+    gasLimit: string;
+    to: string;
+    from: string;
+    value?: string;
+    data?: string;
+    chainId: number; // EIP 155 chainId - mainnet: 1, ropsten: 3
+}
+
 export type DoneCallback = (err?: Error) => void;
 
 export interface JSONRPCPayload {

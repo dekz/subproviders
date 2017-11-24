@@ -25,7 +25,9 @@ declare module 'ledgerco' {
     }
 }
 // web3-provider-engine declarations
-declare class Subprovider {}
+declare class Subprovider {
+    public emitPayload(payload: any): void;
+}
 declare module 'web3-provider-engine/subproviders/subprovider' {
     export = Subprovider;
 }
