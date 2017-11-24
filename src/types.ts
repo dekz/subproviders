@@ -60,7 +60,6 @@ export interface TxParams {
     chainId: number; // EIP 155 chainId - mainnet: 1, ropsten: 3
 }
 
-// TODO confirm final structure
 export interface PartialTxParams {
     nonce: string;
     gasPrice?: number;

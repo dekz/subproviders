@@ -56,7 +56,7 @@ export class LedgerSubprovider extends  Subprovider {
                 end(undefined, accounts);
                 return;
             case 'eth_sendTransaction':
-                var txParams = payload.params[0]
+                var txParams = payload.params[0];
                 var result = await this.sendTransaction(txParams);
                 end(undefined, result);
                 return;
@@ -80,8 +80,9 @@ export class LedgerSubprovider extends  Subprovider {
         }
         return accounts;
     }
-    private async sendTransaction(txParams: PartialTxParams): Promise<void> {
+    private async sendTransaction(txParams: PartialTxParams): Promise<any> {
         console.log('sending tx');
+        await this.lock.wait();
         // fill in the extras
         const filledParams = await this.populateMissingTxParams(txParams);
         // sign it
@@ -89,24 +90,32 @@ export class LedgerSubprovider extends  Subprovider {
         // emit a submit
         const payload = { method: 'eth_sendRawTransaction', params: [signedTx, filledParams]};
         const result = await promisify(this.emitPayload.bind(this))(payload);
-        this.emitPayload({})
+        console.log(result);
+        await this.lock.release();
+        return result;
     }
-    private async populateMissingTxParams(txParams: PartialTxParams): Promise<TxParams> {
+    private async populateMissingTxParams(txParams: PartialTxParams): Promise<PartialTxParams> {
         if (_.isUndefined(txParams.gasPrice)) {
           const gasPriceResult = await promisify(this.emitPayload.bind(this))({ method: 'eth_gasPrice', params: [] });
           const gasPrice = gasPriceResult.result.toString();
-          txParams.gasPrice = gasPrice;
-          console.log(gasPrice);
+          txParams.gasPrice = '0x2';
+          console.log('gasPrice: ', gasPrice);
         }
         if (_.isUndefined(txParams.nonce)) {
             const nonceResult = await promisify(this.emitPayload.bind(this))({ method: 'eth_getTransactionCount', params: [txParams.from, 'pending'] });
             const nonce = nonceResult.result;
             txParams.nonce = nonce;
-            console.log(nonce);
+            console.log('nonce: ', nonce);
+        }
+        if (_.isUndefined(txParams.gas)) {
+          const gasResult = await promisify(this.emitPayload.bind(this))({ method: 'eth_estimateGas', params: [txParams] });
+          const gas = gasResult.result.toString();
+          txParams.gas = gas;
+          console.log('gas: ', gas);
         }
         return txParams;
     }
-    public async signTransactionAsync(txParams: TxParams) : Promise<string> {
+    public async signTransactionAsync(txParams: PartialTxParams) : Promise<string> {
         const tx = new EthereumTx(txParams);
         
         // Set the EIP155 bits
@@ -114,6 +123,7 @@ export class LedgerSubprovider extends  Subprovider {
         tx.raw[7] = Buffer.from([]);         // r
         tx.raw[8] = Buffer.from([]);         // s
         
+        console.log(tx.toJSON());
         const txHex = tx.serialize().toString('hex');
         try {
             const derivationPath = this.buildDerivationPath();
