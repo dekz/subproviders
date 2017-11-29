@@ -10,5 +10,6 @@ export {
 export {
    LedgerBrowserCommunicationFactory,
    LedgerNodeCommunicationFactory,
-   LedgerWalletSubprovider
+   LedgerWalletSubprovider,
+   LedgerSubproviderConfigs
 } from './types'

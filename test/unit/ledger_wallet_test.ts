@@ -12,7 +12,7 @@ import {
 } from '../../src';
 
 import {
-    DoneCallback 
+    DoneCallback, LedgerSubproviderConfigs 
 } from '../../src/types';
 
 const reportCallbackErrors = (done: DoneCallback) => {
@@ -27,14 +27,14 @@ const reportCallbackErrors = (done: DoneCallback) => {
         return wrapped;
     };
 };
-describe('LedgerWallet', () => {
+describe.only('LedgerWallet', () => {
     let wallet: LedgerWallet;
     let stubs: Sinon.SinonStub[] = [];
     let commStub: LedgerEthConnection;
     const networkId: number = 42;
     before(async () => {
         commStub = <LedgerEthConnection>{};
-        wallet = new LedgerWallet((commStub as LedgerEthConnection), networkId);
+        wallet = new LedgerWallet({ ledgerConnection: commStub, networkId });
     });
     afterEach(() => {
         // clean up any stubs after the test has completed
@@ -47,7 +47,7 @@ describe('LedgerWallet', () => {
             const callback = reportCallbackErrors(done)((err: Error, accounts: string[]) =>  {
                 expect(err).to.be.undefined();
                 expect(accounts[0]).to.be.equal('1234');
-                expect(accounts.length).to.be.equal(10);
+                expect(accounts.length).to.be.equal(2);
                 done();
             })
             await wallet.getAccountsAsync(callback);

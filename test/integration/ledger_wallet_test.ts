@@ -36,7 +36,8 @@ describe('LedgerWallet', () => {
     before(async () => {
         const communicationFactory = LedgerNodeCommunicationFactory;
         connection = new LedgerEthConnection(communicationFactory);
-        wallet = new LedgerWallet(connection, network);
+
+        wallet = new LedgerWallet({ ledgerConnection: connection, networkId: network });
     });
     it('returns a list of accounts', (done: DoneCallback) => {
         (async () => {
@@ -71,7 +72,7 @@ describe('LedgerWallet', () => {
             await wallet.signTransactionAsync(tx, callback);
         })().catch(done)
     })
-    it.only('connects as as web3 provider', (done: DoneCallback) => {
+    it('connects as as web3 provider', (done: DoneCallback) => {
         (async () => {
             const provider = new ProviderEngine();
             const subprovider = ledgerWalletSubproviderFactory(connection, network);
