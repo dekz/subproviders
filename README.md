@@ -17,8 +17,10 @@ import {
 
 const networkId = 42;
 const provider = new ProviderEngine();
-// Browser (U2F) or Node
+// Browser (U2F)
 const conn = new LedgerEthConnection(LedgerBrowserCommunicationFactory);
+// Node
+// const conn = new LedgerEthConnection(LedgerNodeCommunicationFactory);
 const wallet = new LedgerWallet(conn, networkId);
 
 const ledgerSubProvider = wrapWalletSubproviderFactory(wallet);
