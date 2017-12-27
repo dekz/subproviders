@@ -1,3 +1,6 @@
+## Deprecated
+See https://github.com/0xProject/0x.js/tree/development/packages/subproviders
+
 ## 0x subproviders
 A bunch of useful subproviders, including a Ledger Nano subprovider.
 
